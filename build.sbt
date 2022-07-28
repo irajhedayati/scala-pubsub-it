@@ -1,13 +1,11 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "2.12.15"
+ThisBuild / scalaVersion := "2.13.8"
 
 lazy val root = (project in file("."))
   .settings(
     name := "scala-pubsub-it",
-    libraryDependencies ++= Seq(
-      "com.google.cloud"            % "google-cloud-pubsub" % "1.119.1",
-    )
+    libraryDependencies += "com.google.cloud" % "google-cloud-pubsub" % "1.119.1"
   )
   .configs(IntegrationTest)
   .settings(Defaults.itSettings)

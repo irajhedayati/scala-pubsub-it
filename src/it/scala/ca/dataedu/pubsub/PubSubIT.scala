@@ -39,12 +39,9 @@ class PubSubIT extends AnyFunSuiteLike with Matchers with BeforeAndAfterAll with
         .build()
     )
 
-    val inputMessage =
-      """{
-        | "key1": "value1"
-        |""".stripMargin
-    val validator = new PubSubValidator(OutputTopicName, List(inputMessage))
-    validator.start(PubsubLocalProjectId, container)
+    val inputMessage = """{"key1": "value1"}""".stripMargin
+    val validator = new PubSubValidator(PubsubLocalProjectId, OutputTopicName, List(inputMessage))
+    validator.start(container)
 
     val app = Main.getSubscriber(
       Array(PubsubLocalProjectId, InputSubscriptionName, OutputTopicName, container.emulatorEndpoint)

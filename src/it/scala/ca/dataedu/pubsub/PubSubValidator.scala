@@ -9,26 +9,24 @@ import org.scalatest.matchers.should.Matchers._
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
-class PubSubValidator(topicName: String, expectedRecords: List[String]) {
+class PubSubValidator(projectId: String, topic: String, expectedRecords: List[String]) {
 
-  private lazy val subscriptionName: String = s"$topicName-sub"
+  private val topicName = TopicName.format(projectId, topic)
+  private val subscriptionName = SubscriptionName.format(projectId, subscription)
+  private lazy val subscription: String = s"$topic-sub"
   private val actualPulledMessages = new ConcurrentLinkedQueue[String]()
   private val numberOfRecordsToPull = new AtomicInteger(expectedRecords.size)
   private var subscriber: ApiService = _
 
-  def start(projectId: String, container: PubSubEmulatorContainer): Unit = {
+  def start(container: PubSubEmulatorContainer): Unit = {
     container.subscriptionAdminClient.createSubscription(
-      Subscription
-        .newBuilder()
-        .setTopic(TopicName.format(projectId, topicName))
-        .setName(SubscriptionName.format(projectId, subscriptionName))
-        .build()
+      Subscription.newBuilder().setTopic(topicName).setName(subscriptionName).build()
     )
     subscriber = container
       .subscriber(
-        ProjectSubscriptionName.of(projectId, subscriptionName),
+        ProjectSubscriptionName.of(projectId, subscription),
         (message: PubsubMessage, consumer: AckReplyConsumer) => {
           actualPulledMessages.add(message.getData.toStringUtf8)
           if (numberOfRecordsToPull.decrementAndGet() < 0)
@@ -41,13 +39,10 @@ class PubSubValidator(topicName: String, expectedRecords: List[String]) {
   }
 
   def assert(): Unit = {
-    while (numberOfRecordsToPull.get() > 0) {
-      Thread.sleep(500)
-    }
+    while (numberOfRecordsToPull.get() > 0) Thread.sleep(500)
     val actual = actualPulledMessages.asScala.toSeq
     subscriber.stopAsync()
     subscriber.awaitTerminated()
-
     actual.size shouldBe expectedRecords.size
     actual should contain theSameElementsAs expectedRecords
   }
